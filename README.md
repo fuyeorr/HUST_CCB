@@ -1,5 +1,7 @@
-# HUST_OS_CD
-xv6
+## Instruction
+xv6 是 MIT 开发的一个教学用的完整的类 Unix 操作系统，并且在 MIT 的操作系统课程 6.828 中使用。
+xv6 的官方网站：https://pdos.csail.mit.edu/6.828/2024/xv6.html
+xv6 的中文文档：https://github.com/ranxian/xv6-chinese
 ## TODO
 - [ ] 安装 x86 模拟器 bochs
 - [ ] 下载并在模拟器运行 xv6
