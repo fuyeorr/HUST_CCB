@@ -20,7 +20,12 @@ sub entry {
     print " ecall\n";
     print " ret\n";
 }
-	
+#--semaphore-test--#
+entry("sem_open");
+entry("sem_wait");
+entry("sem_signal");
+entry("sem_close");
+#------------------#
 entry("fork");
 entry("exit");
 entry("wait");

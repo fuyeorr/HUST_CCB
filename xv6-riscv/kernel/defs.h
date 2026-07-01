@@ -9,6 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct semaphore;
 
 // bio.c
 void            binit(void);
@@ -102,6 +103,15 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
+
+//semaphore.c
+struct          semaphore;
+void            sem_init (struct semaphore *sem, int value);
+void            sem_wait(struct semaphore *sem);
+void            sem_signal(struct semaphore *sem);
+void            seminit(void);
+int             sem_alloc(int value, char *name);
+void            sem_free(int id);
 
 // swtch.S
 void            swtch(struct context*, struct context*);

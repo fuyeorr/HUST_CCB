@@ -3,6 +3,7 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "spinlock.h"
+#include "semaphore.h"
 #include "proc.h"
 #include "defs.h"
 
@@ -25,6 +26,56 @@ extern char trampoline[]; // trampoline.S
 // memory model when using p->parent.
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
+
+struct semaphore sem_table[NSEM];
+struct spinlock sem_table_lock;   //保护sem_table分配的自旋锁
+
+//初始化一个 signal chovy    --Fuyeorr
+//你们signal给我signal好了啊    --折鸦の明前夜
+void
+seminit(void)
+{
+  for (int i = 0; i < NSEM; i++) 
+  {
+      sem_init(&sem_table[i], 0);          //锁定和计数归零
+      sem_table[i].active = 0;
+      memset(sem_table[i].name, 0, 16);
+  }
+    initlock(&sem_table_lock, "semtab");
+}
+
+//分配一个 signal chovy
+int
+sem_alloc(int value, char *name)
+{
+  acquire(&sem_table_lock);
+  for (int i = 0; i < NSEM; i++)
+    {
+      if (sem_table[i].active == 0)
+      {
+        sem_table[i].active = 1;
+        sem_table[i].count = value;      //设置初始资源数
+        safestrcpy(sem_table[i].name, name, sizeof(sem_table[i].name));
+        release(&sem_table_lock);
+        return i;
+      }
+    }
+  release(&sem_table_lock);
+  return -1;
+}
+
+//释放一个 signal chovy
+void
+sem_free(int id)
+{
+  if (id < 0 || id >= NSEM)
+    return;
+  acquire(&sem_table_lock);
+  wakeup(&sem_table[id]);         //我chovy的都给我起来
+  sem_table[id].active = 0;
+  memset(sem_table[id].name, 0, 16);
+  release(&sem_table_lock);
+}
 
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
@@ -214,6 +265,7 @@ proc_freepagetable(pagetable_t pagetable, uint64 sz)
   uvmunmap(pagetable, TRAPFRAME, 1, 0);
   uvmfree(pagetable, sz);
 }
+
 
 // Set up first user process.
 void

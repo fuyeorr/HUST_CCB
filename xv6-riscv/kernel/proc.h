@@ -1,3 +1,4 @@
+#define NSEM 128  //最大内核信号量
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;

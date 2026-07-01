@@ -6,6 +6,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "vm.h"
+#include "semaphore.h"
 
 uint64
 sys_exit(void)
@@ -106,4 +107,46 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_sem_open(void)
+{
+  int value;
+  char name[16];
+  argint(0, &value);
+  argstr(1, name, sizeof(name));
+  return sem_alloc(value, name);
+}
+
+uint64
+sys_sem_wait(void)
+{
+  int id;
+  argint(0, &id);
+  if (id < 0 || id >= NSEM || sem_table[id].active == 0)
+    return -1;
+  sem_wait(&sem_table[id]);
+  return 0;
+}
+
+uint64
+sys_sem_signal(void)
+{
+  int id;
+  argint(0, &id);
+  if (id < 0 || id >= NSEM || sem_table[id].active == 0)
+    return -1;
+  sem_signal(&sem_table[id]);
+  return 0;
+}
+
+uint64
+sys_sem_close(void)
+{
+  int id;
+  argint(0, &id);
+    return -1;
+  sem_free(id);
+  return 0;
 }
