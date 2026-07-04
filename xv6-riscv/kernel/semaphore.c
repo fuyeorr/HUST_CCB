@@ -5,12 +5,15 @@
 #include "semaphore.h"
 #include "defs.h"
 
-void
-sem_init (struct semaphore *sem, int value)
+//初始化单个信号量
+void 
+sem_init(struct semaphore *sem, int value)
 {
     sem->count = value;
     initlock(&sem->lock, "semaphore");
-};
+    sem->active = 0;
+    memset(sem->name, 0, 16);
+}
 
 void
 sem_wait(struct semaphore *sem)
@@ -26,9 +29,10 @@ sem_wait(struct semaphore *sem)
 void
 sem_signal(struct semaphore *sem)
 {
-    acquire(&sem->lock);
+    acquire(&sem->lock);    //这里逻辑没问题，是先加减后判断
     sem->count++;   //归还资源
     //我chovy,起床辣!
-    wakeup(sem);
+    if (sem->count > 0)
+        wakeup(sem);
     release(&sem->lock);
 }
