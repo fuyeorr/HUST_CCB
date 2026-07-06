@@ -109,7 +109,7 @@ struct          semaphore;
 void            sem_init (struct semaphore *sem, int value);
 void            sem_wait(struct semaphore *sem);
 void            sem_signal(struct semaphore *sem);
-void            seminit(void);
+void            sem_table_init(void);
 int             sem_alloc(int value, char *name);
 void            sem_free(int id);
 

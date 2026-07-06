@@ -30,13 +30,13 @@ struct spinlock wait_lock;
 struct semaphore sem_table[NSEM];
 struct spinlock sem_table_lock;   //保护sem_table分配的自旋锁
 
-  //初始化一个 signal chovy    --Fuyeorr
-  //你们signal给我signal好了啊    --折鸦の明前夜
+//初始化一个 signal chovy    --Fuyeorr
+//你们signal给我signal好了啊    --折鸦の夜明前
 void
-seminit(void)   //初始化整个表
+sem_table_init(void)   //初始化整个表
 {
     for (int i = 0; i < NSEM; i++) {
-        sem_init_one(&sem_table[i], 0);
+        sem_init(&sem_table[i], 0);
     }
     initlock(&sem_table_lock, "semtab");
 }
