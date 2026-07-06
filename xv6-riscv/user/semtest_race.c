@@ -1,7 +1,7 @@
 #include "kernel/types.h"
 #include "user/user.h"
 
-#define N_PROCS 4
+#define N_PROCS 20
 
 void atomic_printf(int sem_id, char* msg, int id) {
   sem_wait(sem_id);
@@ -15,7 +15,7 @@ main()
     int sem_id;
     int sem_printf_id;
 
-    sem_id = sem_open(2, "resources");
+    sem_id = sem_open(5, "resources");
     sem_printf_id = sem_open(1, "printf_mutex");
     if (sem_id < 0 || sem_printf_id < 0) {
         printf("sem_open failed\n");
@@ -33,6 +33,8 @@ main()
         
         atomic_printf(sem_printf_id, "Child %d leaving...\n", i);
         sem_signal(sem_id);
+        
+        exit(0);
       }
     }
 
