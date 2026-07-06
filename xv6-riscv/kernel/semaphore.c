@@ -18,21 +18,21 @@ sem_init(struct semaphore *sem, int value)
 void
 sem_wait(struct semaphore *sem)
 {
-    acquire(&sem->lock);    //获取内部锁
-    while (sem->count <=0)
-        //sleep 原子操作 「当前进程进入等待队列」、「释放锁」、「让出CPU」
-        sleep(sem, &sem->lock);
-    sem->count--;   //获取资源
-    release(&sem->lock);    //释放内部锁
+    acquire(&sem->lock);
+    sem->count--;
+    if (sem->count < 0)
+      sleep(sem, &sem->lock);
+    release(&sem->lock);
 }
 
 void
 sem_signal(struct semaphore *sem)
 {
     acquire(&sem->lock);
+    sem->count++;
     //我chovy,起床辣!
-    if (sem->count > 0)
-        wakeup(sem);
-    sem->count++;   //归还资源
+    if (sem->count <= 0)
+        wakeup_one(sem);
+
     release(&sem->lock);
 }
