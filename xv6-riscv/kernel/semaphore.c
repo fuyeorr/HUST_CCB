@@ -29,10 +29,10 @@ sem_wait(struct semaphore *sem)
 void
 sem_signal(struct semaphore *sem)
 {
-    acquire(&sem->lock);    //这里逻辑没问题，是先加减后判断
-    sem->count++;   //归还资源
+    acquire(&sem->lock);
     //我chovy,起床辣!
     if (sem->count > 0)
         wakeup(sem);
+    sem->count++;   //归还资源
     release(&sem->lock);
 }

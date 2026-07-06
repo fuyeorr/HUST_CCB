@@ -41,7 +41,6 @@ seminit(void)   //初始化整个表
     initlock(&sem_table_lock, "semtab");
 }
 
-
 //分配一个 signal chovy
 int
 sem_alloc(int value, char *name)
