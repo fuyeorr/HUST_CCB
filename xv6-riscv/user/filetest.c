@@ -32,13 +32,13 @@ int main()
     close(fd);
     //3.通过硬连接复制shappy文件并验证输出是否为hello,shappy
     printf("3. Creating hard link for shappy file...\n");
-    fd=link("shappy", "shappy_link");
-    if(fd < 0){
+    int num;
+    num=link("shappy", "shappy_link");
+    if(num < 0){
         printf("link error\n");
         exit(1);
     }
     printf("create hard link success\n");
-    close(fd);
     fd = open("shappy_link", O_RDONLY);
     char buf2[100];
     int n2 = read(fd, buf2, 100);
