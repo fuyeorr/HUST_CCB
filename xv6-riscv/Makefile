@@ -127,6 +127,7 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
 .PRECIOUS: %.o
 
 UPROGS=\
+	$U/_forkdemo\
 	$U/_filetest\
 	$U/_semtest_block\
 	$U/_semtest_race\
