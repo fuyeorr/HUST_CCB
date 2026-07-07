@@ -146,7 +146,17 @@ sys_sem_close(void)
 {
   int id;
   argint(0, &id);
+  if (id < 0 || id >= NSEM || sem_table[id].active == 0)
     return -1;
   sem_free(id);
+  return 0;
+}
+
+uint64
+sys_sem_gantt(void)
+{
+  int id;
+  argint(0, &id);
+  sem_gantt(id);
   return 0;
 }

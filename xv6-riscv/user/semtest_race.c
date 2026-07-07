@@ -42,5 +42,13 @@ main()
       wait(0);
     }
 
+    printf("\n=== Gantt Chart for \"resources\" ===\n");
+    sem_gantt(sem_id);
+    printf("\n=== Gantt Chart for \"printf_mutex\" ===\n");
+    sem_gantt(sem_printf_id);
+
+    sem_close(sem_id);
+    sem_close(sem_printf_id);
+
     exit(0);
 }

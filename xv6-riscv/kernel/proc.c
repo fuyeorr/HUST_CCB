@@ -39,6 +39,7 @@ sem_table_init(void)   //初始化整个表
         sem_init(&sem_table[i], 0);
     }
     initlock(&sem_table_lock, "semtab");
+    sem_event_log_init();
 }
 
 //分配一个 signal chovy

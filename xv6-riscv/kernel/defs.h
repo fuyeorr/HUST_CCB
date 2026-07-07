@@ -113,6 +113,9 @@ void            sem_signal(struct semaphore *sem);
 void            sem_table_init(void);
 int             sem_alloc(int value, char *name);
 void            sem_free(int id);
+void            sem_event_log_init(void);
+void            sem_record_event(int sem_id, int pid, uint ticks, int type);
+void            sem_gantt(int sem_id);
 
 // swtch.S
 void            swtch(struct context*, struct context*);

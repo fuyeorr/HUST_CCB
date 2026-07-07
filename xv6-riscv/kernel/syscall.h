@@ -26,3 +26,4 @@
 #define SYS_sem_wait   25
 #define SYS_sem_signal 26
 #define SYS_sem_close  27
+#define SYS_sem_gantt  28

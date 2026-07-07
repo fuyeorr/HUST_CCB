@@ -25,6 +25,7 @@ entry("sem_open");
 entry("sem_wait");
 entry("sem_signal");
 entry("sem_close");
+entry("sem_gantt");
 #------------------#
 entry("fork");
 entry("exit");

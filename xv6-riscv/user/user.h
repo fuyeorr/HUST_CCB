@@ -9,6 +9,7 @@ int sem_open(int value, char *name);
 int sem_wait(int id);
 int sem_signal(int id);
 int sem_close(int id);
+int sem_gantt(int id);
 
 int fork(void);
 int exit(int) __attribute__((noreturn));

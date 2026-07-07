@@ -107,6 +107,7 @@ extern uint64 sys_sem_open(void);
 extern uint64 sys_sem_wait(void);
 extern uint64 sys_sem_signal(void);
 extern uint64 sys_sem_close(void);
+extern uint64 sys_sem_gantt(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -138,6 +139,7 @@ static uint64 (*syscalls[])(void) = {
   [SYS_sem_wait]   sys_sem_wait,
   [SYS_sem_signal] sys_sem_signal,
   [SYS_sem_close]  sys_sem_close,
+  [SYS_sem_gantt]  sys_sem_gantt,
   // clang-format on
 };
 

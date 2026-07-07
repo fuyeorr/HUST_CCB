@@ -27,6 +27,8 @@ main()
         printf("parent: critical section end\n");
         sem_signal(sem_id);
         wait(0);
+        printf("\n=== Gantt Chart ===\n");
+        sem_gantt(sem_id);
         sem_close(sem_id);
     }
     exit(0);
