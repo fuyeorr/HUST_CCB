@@ -116,7 +116,7 @@ void demo_orphan(void)
       exit(1);
     }
     if (pid2 == 0) {
-      printf("  [Grandchild] PID=%d, parent PID=%d\n", getpid(), getpid());
+      printf("  [Grandchild] PID=%d, I am an orphan now\n", getpid());
       printf("  [Grandchild] sleeping 50 ticks...\n");
       pause(50);
       printf("  [Grandchild] exiting (should be adopted by init)\n");
