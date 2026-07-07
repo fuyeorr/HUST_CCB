@@ -6,7 +6,7 @@ int main()
 {
     int fd;
     //1.创建shappy文件并写入内容
-    printf("1. Creating file and writing content...\n");
+    printf("1. Creating file and writing content....\n");
     fd = open("shappy", O_CREATE | O_RDWR);
     if(fd < 0){
         printf("create error\n");
