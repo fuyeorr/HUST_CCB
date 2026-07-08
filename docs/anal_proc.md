@@ -129,9 +129,247 @@
 
 ---
 
-## 四、forkdemo.c 测试用例功能说明
+## 四、forkdemo.c 测试用例代码分析
 
-6 个测试用例覆盖 xv6 进程管理的核心场景（源码详见 `user/forkdemo.c`）：
+以下 6 个测试用例覆盖 xv6 进程管理的核心场景，源码来自 `xv6-riscv/user/forkdemo.c`。
+
+---
+
+### 1. 基本 fork/wait —— `demo_fork()`
+
+```c
+void demo_fork(void)
+{
+  int pid;
+
+  printf("\n=== 1. Basic fork() demo ===\n");
+  printf("Parent PID = %d, about to fork...\n", getpid());
+
+  pid = fork();
+  if (pid < 0) {
+    printf("fork failed\n");
+    return;
+  }
+
+  if (pid == 0) {
+    printf("  [Child ] PID=%d, fork() returned=%d\n", getpid(), pid);
+    printf("  [Child ] doing some work...\n");
+    exit(7);
+  } else {
+    printf("  [Parent] fork() returned child PID=%d\n", pid);
+    printf("  [Parent] waiting for child...\n");
+    int status;
+    int wpid = wait(&status);
+    printf("  [Parent] wait() returned PID=%d, exit status=%d\n", wpid, status);
+  }
+}
+```
+
+| 代码行 | 验证的 xv6 内核机制 |
+|--------|-------------------|
+| `pid = fork()` | `kfork()` 调用 `allocproc()` 分配 PCB + `uvmcopy()` 复制地址空间 |
+| `pid == 0` 分支 | `np->trapframe->a0 = 0` 使子进程返回 0，父进程返回子进程 pid |
+| `exit(7)` | `kexit()` 将状态码写入 `p->xstate`，进程状态置为 `ZOMBIE` |
+| `wait(&status)` | `kwait()` 遍历进程表查找 `ZOMBIE` 子进程，`copyout` 传递退出状态，`freeproc()` 释放资源 |
+
+---
+
+### 2. 父子并发 —— `demo_concurrent()`
+
+```c
+void demo_concurrent(void)
+{
+  printf("\n=== 2. Concurrent parent/child demo ===\n");
+  int pid = fork();
+  if (pid < 0) {
+    printf("fork failed\n");
+    return;
+  }
+  if (pid == 0) {
+    for (int i = 0; i < 3; i++) {
+      printf("  [Child ] tick %d\n", i);
+      pause(20);               // 让出 CPU 20 ticks
+    }
+    exit(0);
+  } else {
+    for (int i = 0; i < 3; i++) {
+      printf("  [Parent] tick %d\n", i);
+      pause(20);               // 让出 CPU 20 ticks
+    }
+    wait(0);
+  }
+}
+```
+
+| 代码行 | 验证的 xv6 内核机制 |
+|--------|-------------------|
+| `pause(20)` | 调用 `sleep()` 让出 CPU，调度器切换到另一个 `RUNNABLE` 进程 |
+| 父子交替打印 | 验证轮询（Round-Robin）调度策略，父子进程共享 CPU 时间片 |
+| `wait(0)` | 父进程在子进程退出后回收，若子进程未退出则 `sleep` 阻塞等待 |
+
+**预期输出**显示父子进程的 tick 日志交替出现，说明调度器在两者之间来回切换。
+
+---
+
+### 3. 多个子进程 —— `demo_multi_children()`
+
+```c
+void demo_multi_children(void)
+{
+  printf("\n=== 3. Multiple children demo ===\n");
+  int i, pid;
+
+  for (i = 0; i < 4; i++) {
+    pid = fork();
+    if (pid < 0) {
+      printf("  fork failed at i=%d\n", i);
+      break;
+    }
+    if (pid == 0) {
+      printf("  [Child #%d] PID=%d started\n", i, getpid());
+      pause(30 * (i + 1));
+      printf("  [Child #%d] PID=%d exiting\n", i, getpid());
+      exit(i);
+    }
+    printf("  [Parent  ] spawned child #%d PID=%d\n", i, pid);
+  }
+
+  printf("  [Parent  ] waiting for all children...\n");
+  int status;
+  while ((pid = wait(&status)) > 0) {
+    printf("  [Parent  ] child PID=%d exited with status=%d\n", pid, status);
+  }
+  printf("  [Parent  ] no more children, wait()=%d\n", pid);
+}
+```
+
+| 代码行 | 验证的 xv6 内核机制 |
+|--------|-------------------|
+| `for` 循环 `fork()` 4 次 | `kfork()` 创建 4 个子进程，各分配独立的 PCB 和地址空间 |
+| `exit(i)` | 每个子进程以不同序号退出，验证 `xstate` 能正确传递退出码 |
+| `while ((pid = wait(&status)) > 0)` | `kwait()` 每次回收一个已退出的子进程，返回其 pid；当无子进程时返回 -1 终止循环 |
+| 子进程休眠时间不同 | 验证 `sleep/wakeup` 与调度器的协作：子进程在不同时刻进入 `RUNNABLE` 并依次退出 |
+
+---
+
+### 4. 僵尸进程 —— `demo_zombie()`
+
+```c
+void demo_zombie(void)
+{
+  printf("\n=== 4. Zombie process demo ===\n");
+  int pid = fork();
+  if (pid < 0) {
+    printf("fork failed\n");
+    return;
+  }
+  if (pid == 0) {
+    printf("  [Child ] PID=%d, exiting immediately\n", getpid());
+    exit(0);
+  } else {
+    printf("  [Parent] PID=%d, child PID=%d\n", getpid(), pid);
+    printf("  [Parent] sleeping 100 ticks (child is zombie)...\n");
+    pause(100);
+    printf("  [Parent] now calling wait() to reap zombie\n");
+    wait(0);
+    printf("  [Parent] zombie reaped\n");
+  }
+}
+```
+
+| 代码行 | 验证的 xv6 内核机制 |
+|--------|-------------------|
+| 子进程立即 `exit(0)` | `kexit()` 将子进程状态设为 `ZOMBIE`，释放文件描述符和用户内存，但保留 PCB |
+| `pause(100)` 父进程延迟回收 | 子进程保持僵尸态 100 ticks，验证 PCB 在 `ZOMBIE` 状态下未被释放 |
+| `wait(0)` | `kwait()` 找到 `ZOMBIE` 子进程，调用 `freeproc()` 释放 trapframe、页表、内核栈，PCB 重置为 `UNUSED` |
+
+**关键观察**：在父进程 `pause(100)` 期间，子进程的 PCB 条目（可通过 `ps` 或 `ctrl-p` 查看）状态显示为 `ZOMBIE`，直到 `wait()` 调用后彻底消失。
+
+---
+
+### 5. 孤儿进程 —— `demo_orphan()`
+
+```c
+void demo_orphan(void)
+{
+  printf("\n=== 5. Orphan process demo ===\n");
+  int pid = fork();
+  if (pid < 0) {
+    printf("fork failed\n");
+    return;
+  }
+  if (pid == 0) {
+    int pid2 = fork();
+    if (pid2 < 0) {
+      printf("  fork2 failed\n");
+      exit(1);
+    }
+    if (pid2 == 0) {
+      printf("  [Grandchild] PID=%d, I am an orphan now\n", getpid());
+      printf("  [Grandchild] sleeping 50 ticks...\n");
+      pause(50);
+      printf("  [Grandchild] exiting (should be adopted by init)\n");
+      exit(0);
+    }
+    printf("  [Child] PID=%d exiting, grandchild becomes orphan\n", getpid());
+    exit(0);
+  } else {
+    printf("  [Parent] PID=%d, child PID=%d\n", getpid(), pid);
+    int status;
+    wait(&status);
+    printf("  [Parent] child exited, status=%d\n", status);
+    printf("  [Parent] grandchild was reaped by init\n");
+  }
+}
+```
+
+| 代码行 | 验证的 xv6 内核机制 |
+|--------|-------------------|
+| Child 调用 `fork()` 创建 Grandchild | 验证 `kfork()` 创建的嵌套父子关系 |
+| Child 调用 `exit(0)` 先于 Grandchild | `kexit()` 中调用 `reparent()`，将 Grandchild 的 `parent` 改为 `initproc` |
+| Grandchild `pause(50)` 后退出 | `kexit()` 时其父进程已是 `initproc`，`wakeup(initproc)` 通知 init |
+| 父进程 `wait(&status)` 只回收 Child | `kwait()` 只回收调用进程的直接子进程 |
+| Grandchild 被 init 回收 | `initproc` 在 `main.c` 中循环调用 `wait(0)`，回收所有孤儿进程 |
+
+---
+
+### 6. fork + exec —— `demo_exec()`
+
+```c
+void demo_exec(void)
+{
+  printf("\n=== 6. fork + exec demo ===\n");
+  int pid = fork();
+  if (pid < 0) {
+    printf("fork failed\n");
+    return;
+  }
+  if (pid == 0) {
+    printf("  [Child ] PID=%d, about to exec('echo')\n", getpid());
+    char *args[] = {"echo", "Hello from exec!", 0};
+    exec("echo", args);
+    printf("  [Child ] exec failed!\n");
+    exit(1);
+  } else {
+    printf("  [Parent] PID=%d, child PID=%d\n", getpid(), pid);
+    wait(0);
+    printf("  [Parent] child done\n");
+  }
+}
+```
+
+| 代码行 | 验证的 xv6 内核机制 |
+|--------|-------------------|
+| `fork()` 后父子分别执行 | 验证 `fork()` 返回两次，父子进程共享代码段但各有独立地址空间 |
+| 子进程调用 `exec("echo", args)` | `kexec()` 释放旧用户页表，为 ELF 加载新页表，重置 `trapframe` 的入口点 |
+| `exec` 失败后 `exit(1)` | 若 `exec` 错误返回，子进程继续执行后续代码并退出，父进程正常回收 |
+| 父进程 `wait(0)` | 等待子进程执行 `echo` 完毕后回收 |
+
+**预期输出**：子进程打印 `Hello from exec!`（由 echo 程序输出），父进程随后打印 `child done`。验证了"fork 创建进程 + exec 替换地址空间"的标准 Unix shell 模式。
+
+---
+
+### 汇总
 
 | 测试 | 功能 | 验证要点 |
 |------|------|---------|
